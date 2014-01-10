@@ -4,8 +4,10 @@ module Msf::Post::Unix
 
   #
   # Returns an array of hashes each representing a user
-  # Keys are name, uid, gid, info, dir and shell
   #
+  # Keys are +:name+, +:uid+, +:gid+, +:info+, +:dir+, and +:shell+
+  #
+  # @return [Array<Hash>]
   def get_users
     users = []
     etc_passwd = nil
@@ -36,8 +38,10 @@ module Msf::Post::Unix
 
   #
   # Returns an array of hashes each hash representing a user group
-  # Keys are name, gid and users
   #
+  # Keys are +:name+, +:gid+, and +:users+
+  #
+  # @return [Array<Hash>]
   def get_groups
     groups = []
     cmd_out = read_file("/etc/group").split("\n")
@@ -55,6 +59,7 @@ module Msf::Post::Unix
   #
   # Enumerates the user directories in /Users or /home
   #
+  # @return [Array<String>]
   def enum_user_directories
     user_dirs = []
 

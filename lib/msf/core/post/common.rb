@@ -29,6 +29,7 @@ module Msf::Post::Common
   #
   # Checks if the remote system has a process with ID +pid+
   #
+  # @param pid [Fixnum]
   def has_pid?(pid)
     pid_list = []
     case client.type
@@ -144,10 +145,13 @@ module Msf::Post::Common
   # uses proc_open() both of which have similar semantics to POSIX.
   #
   # On shell sessions, this passes +cmd+ directly the session's
-  # +shell_command_token+ method.
+  # {Msf::Session::Provider::SingleCommandShell#shell_command_token}
+  # method.
   #
-  # Returns a (possibly multi-line) String.
-  #
+  # @param cmd [String] The command to run
+  # @param args [String] Arguments. See above for an explanation.
+  # @param time_out [Fixnum] Timeout in seconds
+  # @return [String] The (possibly multi-line) output from +cmd+
   def cmd_exec(cmd, args=nil, time_out=15)
     case session.type
     when /meterpreter/
