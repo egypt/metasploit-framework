@@ -244,7 +244,7 @@ class Rex::Socket::Comm::Local
             ::File.open("/proc/self/net/igmp6") do |fd|
               fd.each_line do |line|
                 line = line.strip
-                tscope, tint, junk = line.split(/\s+/, 3)
+                tscope, tint, _ = line.split(/\s+/, 3)
                 next if not tint
 
                 # Specifying lo in any connect call results in the socket
@@ -378,9 +378,9 @@ class Rex::Socket::Comm::Local
       ni_packet << [route_data.length - 4].pack('N') + route_data
       # Now that we've built the whole packet, prepend its length before writing it to the wire
       ni_packet = [ni_packet.length].pack('N') + ni_packet
-      
+
       size = sock.put(ni_packet)
-      
+
       if size != ni_packet.length
         raise Rex::ConnectionProxyError.new(host, port, type, "Failed to send the entire request to the proxy"), caller
       end

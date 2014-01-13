@@ -2,6 +2,34 @@
 
 module Msf::Post::Unix
 
+  require 'msf/core/post/unix/priv'
+
+  # Search for a passwd file in all the locations where various Unices
+  # usually store them.
+  #
+  # @return [String] Path to remote passwd file, e.g. "/etc/passwd"
+  def find_etc_passwd
+    possible_locations = [
+      "/etc/passwd",
+      "/etc/security/passwd",
+      "/etc/master.passwd",
+    ]
+
+    possible_locations.find { |f| file_exist?(f) }
+  end
+
+  def getent_passwd
+    ent = cmd_exec("getent passwd").strip
+    if ent.empty?
+      etc_passwd = find_etc_passwd
+      if etc_passwd
+        ent = read_file(etc_passwd)
+      end
+    end
+
+    ent
+  end
+
   #
   # Returns an array of hashes each representing a user
   #
@@ -10,17 +38,8 @@ module Msf::Post::Unix
   # @return [Array<Hash>]
   def get_users
     users = []
-    etc_passwd = nil
-    [
-      "/etc/passwd",
-      "/etc/security/passwd",
-      "/etc/master.passwd",
-    ].each { |f|
-      if file_exist?(f)
-        etc_passwd = f
-        break
-      end
-    }
+    etc_passwd = find_etc_passwd
+
     cmd_out = read_file(etc_passwd).split("\n")
     cmd_out.each do |l|
       entry = {}
@@ -62,9 +81,10 @@ module Msf::Post::Unix
   # @return [Array<String>]
   def enum_user_directories
     user_dirs = []
+    etc_passwd = find_etc_passwd
 
     # get all user directories from /etc/passwd
-    read_file("/etc/passwd").each_line do |passwd_line|
+    read_file(etc_passwd).each_line do |passwd_line|
       user_dirs << passwd_line.split(/:/)[5]
     end
 
