@@ -244,7 +244,7 @@ class Rex::Socket::Comm::Local
             ::File.open("/proc/self/net/igmp6") do |fd|
               fd.each_line do |line|
                 line = line.strip
-                tscope, tint, junk = line.split(/\s+/, 3)
+                tscope, tint, _ = line.split(/\s+/, 3)
                 next if not tint
 
                 # Specifying lo in any connect call results in the socket

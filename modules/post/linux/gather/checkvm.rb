@@ -9,7 +9,7 @@ require 'rex'
 class Metasploit3 < Msf::Post
 
   include Msf::Post::File
-  include Msf::Post::Linux::Priv
+  include Msf::Post::Unix::Priv
   include Msf::Post::Linux::System
 
 
