@@ -1,8 +1,6 @@
 ##
-# This file is part of the Metasploit Framework and may be subject to
-# redistribution and commercial restrictions. Please see the Metasploit
-# web site for more information on licensing and terms of use.
-#   http://metasploit.com/
+# This module requires Metasploit: http//metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
 ##
 
 require 'uri'
@@ -40,7 +38,7 @@ class Metasploit3 < Msf::Auxiliary
       [
         Opt::RPORT(80),
         OptString.new('TARGETURI',[true, 'Path to CimWeb', '/CimWeb']),
-        OptString.new('FILEPATH', [true, 'The name of the file to download', '/boot.ini']),
+        OptString.new('FILEPATH', [true, 'The name of the file to download', '/windows\\win.ini']),
         # By default gefebt.exe installed on C:\Program Files\GE Fanuc\Proficy CIMPLICITY\WebPages\CimWeb
         OptInt.new('DEPTH', [true, 'Traversal depth', 5])
       ], self.class)

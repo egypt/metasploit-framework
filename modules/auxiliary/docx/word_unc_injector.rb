@@ -1,13 +1,22 @@
 ##
-# This file is part of the Metasploit Framework and may be subject to
-# redistribution and commercial restrictions. Please see the Metasploit
-# Framework web site for more information on licensing and terms of use.
-#   http://Metasploit.com/projects/Framework/
+# This module requires Metasploit: http//metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
 ##
 
+#
+# Gems
+#
+
+# for extracting files
+require 'zip'
+
+#
+# Project
+#
+
 require 'msf/core'
-require 'zip/zip' #for extracting files
-require 'rex/zip' #for creating files
+# for creating files
+require 'rex/zip'
 
 class Metasploit3 < Msf::Auxiliary
 
@@ -21,8 +30,8 @@ class Metasploit3 < Msf::Auxiliary
         netNTLM credentials to a remote host. It can also create an empty docx file. If
         emailed the receiver needs to put the document in editing mode before the remote
         server will be contacted. Preview and read-only mode do not work. Verified to work
-        with Microsoft Word 2003, 2007 and 2010 as of January 2013. In order to get the
-        hashes the auxiliary/server/capture/smb module can be used.
+        with Microsoft Word 2003, 2007, 2010, and 2013. In order to get the hashes the
+        auxiliary/server/capture/smb module can be used.
       },
       'License'        => MSF_LICENSE,
       'References'     =>
@@ -57,7 +66,7 @@ class Metasploit3 < Msf::Auxiliary
     metadata_file_data << "2013-01-08T14:14:00Z</dcterms:modified></cp:coreProperties>"
 
     #where to find the skeleton files required for creating an empty document
-    data_dir = File.join(Msf::Config.install_root, "data", "exploits", "docx")
+    data_dir = File.join(Msf::Config.data_directory, "exploits", "docx")
 
     zip_data = {}
 
@@ -146,17 +155,17 @@ class Metasploit3 < Msf::Auxiliary
 
   #unzip the .docx document. sadly Rex::zip does not uncompress so we do it the Rubyzip way
   def unzip_docx
-    #Ruby sometimes corrupts the document when manipulating inside a compressed document, so we extract it with Zip::ZipFile
+    #Ruby sometimes corrupts the document when manipulating inside a compressed document, so we extract it with Zip::File
     vprint_status("Extracting #{datastore['SOURCE']} into memory.")
     #we read it all into memory
     zip_data = Hash.new
     begin
-      Zip::ZipFile.open(datastore['SOURCE'])  do |filezip|
+      Zip::File.open(datastore['SOURCE'])  do |filezip|
         filezip.each do |entry|
           zip_data[entry.name] = filezip.read(entry)
         end
       end
-    rescue Zip::ZipError => e
+    rescue Zip::Error => e
       print_error("Error extracting #{datastore['SOURCE']} please verify it is a valid .docx document.")
       return nil
     end

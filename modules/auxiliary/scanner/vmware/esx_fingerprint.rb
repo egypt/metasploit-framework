@@ -1,8 +1,6 @@
 ##
-# This file is part of the Metasploit Framework and may be subject to
-# redistribution and commercial restrictions. Please see the Metasploit
-# web site for more information on licensing and terms of use.
-#   http://metasploit.com/
+# This module requires Metasploit: http//metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
 ##
 
 
@@ -78,7 +76,7 @@ class Metasploit3 < Msf::Auxiliary
     full_match = res.body.match(/<fullName>([\w\s\.\-]+)<\/fullName>/)
     this_host = nil
     if full_match
-      print_good "Identified #{full_match[1]}"
+      print_good("#{rhost}:#{rport} - Identified #{full_match[1]}")
       report_service(:host => (this_host || ip), :port => rport, :proto => 'tcp', :name => 'https', :info => full_match[1])
     end
     if os_match and ver_match and build_match

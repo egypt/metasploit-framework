@@ -212,6 +212,31 @@ class Table
     rows << '__hr__'
   end
 
+  #
+  # Returns new sub-table with headers and rows maching column names submitted
+  #
+  def [](*col_names)
+    tbl = self.class.new('Indent' => self.indent,
+                         'Header' => self.header,
+                         'Columns' => col_names)
+    indexes = []
+
+    col_names.each do |col_name|
+      index = self.columns.index(col_name)
+      raise RuntimeError, "Invalid column name #{col_name}" if index.nil?
+      indexes << index
+    end
+
+    self.rows.each do |old_row|
+      new_row = []
+      indexes.map {|i| new_row << old_row[i]}
+      tbl << new_row
+    end
+
+    return tbl
+  end
+
+
   alias p print
 
   attr_accessor :header, :headeri # :nodoc:
@@ -250,9 +275,9 @@ protected
         nameline << pad(' ', last_col, last_idx)
 
         remainder = colprops[last_idx]['MaxWidth'] - last_col.length
-      if (remainder < 0)
-        remainder = 0
-      end
+        if (remainder < 0)
+          remainder = 0
+        end
         barline << (' ' * (cellpad + remainder))
       end
       nameline << col
@@ -280,12 +305,18 @@ protected
     last_cell = nil
     last_idx = nil
     row.each_with_index { |cell, idx|
-      if (last_cell)
+      if (idx != 0)
         line << pad(' ', last_cell.to_s, last_idx)
       end
-      line << cell.to_s
       # line << pad(' ', cell.to_s, idx)
-      last_cell = cell
+      # Limit wide cells
+      if colprops[idx]['MaxChar']
+        last_cell = cell.to_s[0..colprops[idx]['MaxChar'].to_i]
+        line << last_cell
+      else
+        line << cell.to_s
+        last_cell = cell
+      end
       last_idx = idx
     }
 

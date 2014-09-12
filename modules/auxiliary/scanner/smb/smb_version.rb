@@ -1,8 +1,6 @@
 ##
-# This file is part of the Metasploit Framework and may be subject to
-# redistribution and commercial restrictions. Please see the Metasploit
-# web site for more information on licensing and terms of use.
-#   http://metasploit.com/
+# This module requires Metasploit: http//metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
 ##
 
 
@@ -38,12 +36,20 @@ class Metasploit3 < Msf::Auxiliary
     deregister_options('RPORT')
   end
 
+  def rport
+    @rport || datastore['RPORT']
+  end
+
+  def smb_direct
+    @smbdirect || datastore['SMBDirect']
+  end
+
   # Fingerprint a single host
   def run_host(ip)
     [[445, true], [139, false]].each do |info|
 
-    datastore['RPORT'] = info[0]
-    datastore['SMBDirect'] = info[1]
+    @rport = info[0]
+    @smbdirect = info[1]
     self.simple = nil
 
     begin

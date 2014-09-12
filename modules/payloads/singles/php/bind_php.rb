@@ -1,8 +1,6 @@
 ##
-# This file is part of the Metasploit Framework and may be subject to
-# redistribution and commercial restrictions. Please see the Metasploit
-# web site for more information on licensing and terms of use.
-#   http://metasploit.com/
+# This module requires Metasploit: http//metasploit.com/download
+# Current source: https://github.com/rapid7/metasploit-framework
 ##
 
 require 'msf/core'
@@ -21,7 +19,7 @@ module Metasploit3
     super(merge_info(info,
       'Name'          => 'PHP Command Shell, Bind TCP (via PHP)',
       'Description'   => 'Listen for a connection and spawn a command shell via php',
-      'Author'        => ['egypt', 'diaul <diaul@devilopers.org>',],
+      'Author'        => ['egypt', 'diaul <diaul[at]devilopers.org>',],
       'License'       => BSD_LICENSE,
       'Platform'      => 'php',
       'Arch'          => ARCH_PHP,
