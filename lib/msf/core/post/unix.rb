@@ -12,6 +12,20 @@ module Msf::Post::Unix
     possible_locations = [
       "/etc/passwd",
       "/etc/security/passwd",
+    ]
+
+    possible_locations.find { |f| file_exist?(f) }
+  end
+
+  # Search for a shadow file in all the locations where various Unices
+  # usually store them.
+  #
+  # @return [String] Path to remote shadow file, e.g. "/etc/shadow"
+  def find_etc_shadow
+    possible_locations = [
+      "/etc/shadow",
+      "/etc/shadow-",
+      "/etc/security/shadow",
       "/etc/master.passwd",
     ]
 
@@ -30,6 +44,19 @@ module Msf::Post::Unix
     ent
   end
 
+  def getent_shadow
+    ent = cmd_exec("getent shadow").strip
+    if ent.empty?
+      etc_shadow = find_etc_shadow
+      if etc_shadow
+        ent = read_file(etc_shadow)
+      end
+    end
+
+    ent
+  end
+
+
   #
   # Returns an array of hashes each representing a user
   #
@@ -38,9 +65,8 @@ module Msf::Post::Unix
   # @return [Array<Hash>]
   def get_users
     users = []
-    etc_passwd = find_etc_passwd
 
-    cmd_out = read_file(etc_passwd).split("\n")
+    cmd_out = getent_passwd.split("\n")
     cmd_out.each do |l|
       entry = {}
       user_field = l.split(":")
