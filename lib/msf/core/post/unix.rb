@@ -60,9 +60,8 @@ module Msf::Post::Unix
   #
   # Returns an array of hashes each representing a user
   #
-  # Keys are +:name+, +:uid+, +:gid+, +:info+, +:dir+, and +:shell+
-  #
   # @return [Array<Hash>]
+  #   Keys are +:name+, +:uid+, +:gid+, +:info+, +:dir+, and +:shell+
   def get_users
     users = []
 
