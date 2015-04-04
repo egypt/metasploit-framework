@@ -21,7 +21,7 @@ class Metasploit3 < Msf::Post
           'Carlos Perez <carlos_perez[at]darkoperator.com>', # original osx/linux/solaris versions
           'egypt' # consolidation
         ],
-        'Platform'      => [ 'linux', 'osx', 'solaris', 'bsd' ],
+        'Platform'      => [ 'linux', 'solaris', 'bsd' ],
         'SessionTypes'  => [ 'shell' ]
       ))
 
@@ -82,7 +82,7 @@ class Metasploit3 < Msf::Post
       _, hash, _ = shadow_lines.find { |line| line.first == user }
 
       # Don't bother with locked/disabled accounts
-      if hash !~ /^(?:\*$|!)/
+      if hash !~ /^(?:\*$|!|LK|NP)/
         # Replace an 'x' preceded by the username and succeeded by a colon,
         # with the captured hash; e.g. this:
         #    msfadmin:x:1000:1000:msfadmin,,,:/home/msfadmin:/bin/bash
