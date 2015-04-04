@@ -7,21 +7,29 @@ module Msf::Post::Unix
   # Search for a passwd file in all the locations where various Unices
   # usually store them.
   #
+  #
   # @return [String] Path to remote passwd file, e.g. "/etc/passwd"
-  def find_etc_passwd
+  def read_etc_passwd
     possible_locations = [
       "/etc/passwd",
       "/etc/security/passwd",
     ]
 
-    possible_locations.find { |f| file_exist?(f) }
+    possible_locations.each do |f|
+      next unless file_exist?(f)
+      data = read_file(f)
+      return data if data && !data.empty?
+    end
   end
 
   # Search for a shadow file in all the locations where various Unices
   # usually store them.
   #
-  # @return [String] Path to remote shadow file, e.g. "/etc/shadow"
-  def find_etc_shadow
+  # @note Modules probably shouldn't use this directly; see {#getent_shadow}
+  #   instead unless you specifically need to know if a file exists
+  #
+  # @return [String] contents of /etc/shadow or equivalent
+  def read_etc_shadow
     possible_locations = [
       "/etc/shadow",
       "/etc/shadow-",
@@ -29,28 +37,31 @@ module Msf::Post::Unix
       "/etc/master.passwd",
     ]
 
-    possible_locations.find { |f| file_exist?(f) }
+    possible_locations.each do |f|
+      next unless file_exist?(f)
+      data = read_file(f)
+      return data if data && !data.empty?
+    end
   end
 
+  # Grab the unprocessed passwd. This tries `getent passwd` first, which may
+  # give you LDAP users.
+  #
+  # @return [String] contents of /etc/passwd or equivalent
   def getent_passwd
     ent = cmd_exec("getent passwd").strip
     if ent.empty?
-      etc_passwd = find_etc_passwd
-      if etc_passwd
-        ent = read_file(etc_passwd)
-      end
+      ent = read_etc_passwd
     end
 
     ent
   end
 
+  # @return [String] contents of /etc/shadow or equivalent
   def getent_shadow
     ent = cmd_exec("getent shadow").strip
     if ent.empty?
-      etc_shadow = find_etc_shadow
-      if etc_shadow
-        ent = read_file(etc_shadow)
-      end
+      ent = read_etc_shadow
     end
 
     ent
@@ -104,11 +115,10 @@ module Msf::Post::Unix
   # @return [Array<String>]
   def enum_user_directories
     user_dirs = []
-    etc_passwd = find_etc_passwd
 
     # get all user directories from /etc/passwd
-    read_file(etc_passwd).each_line do |passwd_line|
-      user_dirs << passwd_line.split(/:/)[5]
+    get_users.each do |user|
+      user_dirs << user[:dir]
     end
 
     # also list other common places for home directories in the event that
