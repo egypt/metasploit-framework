@@ -56,7 +56,6 @@ module Msf::Post::Unix
     ent
   end
 
-
   #
   # Returns an array of hashes each representing a user
   #
@@ -83,9 +82,8 @@ module Msf::Post::Unix
   #
   # Returns an array of hashes each hash representing a user group
   #
-  # Keys are +:name+, +:gid+, and +:users+
-  #
   # @return [Array<Hash>]
+  #   Keys are +:name+, +:gid+, and +:users+
   def get_groups
     groups = []
     cmd_out = read_file("/etc/group").split("\n")
