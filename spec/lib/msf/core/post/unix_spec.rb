@@ -85,42 +85,19 @@ describe Msf::Post::Unix do
       mod.get_users
     end
 
-    shared_examples_for '#get_users' do
-      specify do
-        expect(get_users.size).to eq(passwd.lines.size)
-      end
-      specify do
-        expect(get_users.first[:name]).to eq(passwd.lines.first.split(':').first)
-      end
+    before do
+      allow(mod).to receive(:getent_passwd).and_return(passwd)
     end
 
-    context 'with a working getent' do
-      before do
-        allow(mod).to receive(:cmd_exec).with("getent passwd").and_return(passwd)
-      end
-      it_behaves_like '#get_users'
+    specify do
+      expect(get_users.size).to eq(passwd.lines.size)
+    end
+    specify do
+      all_names = Set.new(get_users.map { |u| u[:name] })
+      expected_users = Set.new(passwd.lines.map { |line| line.split(':').first })
+      expect(all_names).to eq expected_users
     end
 
-    context 'with a busted getent' do
-      before do
-        allow(mod).to receive(:cmd_exec).with("getent passwd").and_return("")
-      end
-      context 'with /etc/passwd' do
-        before do
-          allow(mod).to receive(:file_exist?).with("/etc/passwd").and_return(true)
-          allow(mod).to receive(:read_file).with("/etc/passwd").and_return(passwd)
-        end
-
-        it_behaves_like '#get_users'
-      end
-      context 'without /etc/passwd' do
-        before do
-          allow(mod).to receive(:file_exist?).with("/etc/passwd").and_return(false)
-        end
-
-        it_behaves_like '#get_users'
-      end
-    end
   end
 
 end
