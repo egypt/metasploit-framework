@@ -7,8 +7,11 @@ module Msf::Post::Unix
   # Search for a passwd file in all the locations where various Unices
   # usually store them.
   #
+  # @example
+  #   read_etc_passwd.lines.first
+  #   # => "root:x:0:0:root:/root:/bin/bash\n"
   #
-  # @return [String] Path to remote passwd file, e.g. "/etc/passwd"
+  # @return [String] Remote passwd file data
   def read_etc_passwd
     possible_locations = [
       "/etc/passwd",
@@ -20,6 +23,8 @@ module Msf::Post::Unix
       data = read_file(f)
       return data if data && !data.empty?
     end
+
+    raise "Can't find a passwd file"
   end
 
   # Search for a shadow file in all the locations where various Unices

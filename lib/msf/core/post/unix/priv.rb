@@ -7,21 +7,20 @@ module Msf::Post::Unix::Priv
   # Returns true if running as root, false if not.
   #
   def is_root?
-    root_priv = false
     # Solaris keeps id(1) in /usr/xpg4/bin/, which isn't usually in the
     # PATH.
-    user_id = cmd_exec("(/usr/xpg4/bin/id -u || id -u || /usr/bin/id -u) 2>/dev/null")
-    clean_user_id = user_id.to_s.gsub(/[^\d]/,"")
-    if clean_user_id.empty?
-      raise "Could not determine UID: #{user_id.inspect}"
+    id_output = cmd_exec("(/usr/xpg4/bin/id || id || /usr/bin/id) 2>/dev/null")
+
+    # Linux:
+    #   uid=1000(msfadmin) gid=1000(msfadmin) groups=1000(msfadmin),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),107(lpadmin),124(sambashare),130(wireshark)
+    uid_match = id_output.match(/uid=(\d+)[^ ]?/)
+    if uid_match
+      clean_user_id = uid_match[1]
     else
-      if clean_user_id =~ /^0$/
-        root_priv = true
-      elsif clean_user_id =~ /^\d*$/
-        root_priv = false
-      end
+      raise "Could not determine UID: #{id_output.inspect}"
     end
-    return root_priv
+
+    "0" == clean_user_id
   end
 
 end
