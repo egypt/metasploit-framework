@@ -1337,6 +1337,8 @@ class Core
 
     when "add", "remove", "del"
       subnet = args.shift
+      return cmd_route_help unless subnet
+
       subnet,cidr_mask = subnet.split("/")
 
       if cidr_mask
