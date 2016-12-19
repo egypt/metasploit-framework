@@ -38,7 +38,7 @@ module Auxiliary::AuthBrute
         Maximum guesses for a particular username for the service instance.
         Note that users are considered unique among different services, so a
         user at 10.1.1.1:22 is different from one at 10.2.2.2:22, and both will
-        be tried up to the MaxGuessesPerUser limit.	If set to zero or a non-number,
+        be tried up to the MaxGuessesPerUser limit. If set to zero or a non-number,
         this option will not be used.}.gsub(/[\t\r\n\s]+/nm,"\s"), 0]) # Tracked in @@brute_start_time
     ], Auxiliary::AuthBrute)
 
