@@ -498,14 +498,6 @@ class Msf::Module::Platform
   end
 
   #
-  # JavaScript
-  #
-  class JavaScript < Msf::Module::Platform
-    Rank = 100
-    Alias = "js"
-  end
-
-  #
   # Python
   #
   class Python < Msf::Module::Platform
