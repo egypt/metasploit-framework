@@ -400,6 +400,60 @@ class Console::CommandDispatcher::Stdapi::Net
 
   end
 
+  def portfwd_add(lhost, lport, rhost, rport)
+
+    service = client.pfservice
+
+    # Validate parameters
+    unless lport && rhost && rport
+      print_error('You must supply a local port, remote host, and remote port.')
+      return
+    end
+
+    # Start the local TCP relay in association with this stream
+    service.start_tcp_relay(
+      lport,
+      'LocalHost'         => lhost,
+      'PeerHost'          => rhost,
+      'PeerPort'          => rport,
+      'MeterpreterRelay'  => true,
+      'OnLocalConnection' => Proc.new { |relay, lfd| create_tcp_channel(relay) }
+    )
+  end
+
+  def portfwd_add_reverse(lhost, lport, rhost, rport)
+    # Validate parameters
+    unless lport && lhost && rport
+      print_error('You must supply a local port, local host, and remote port.')
+      return
+    end
+
+    begin
+      service = client.pfservice
+
+      channel = client.net.socket.create(
+        Rex::Socket::Parameters.new(
+          'LocalPort' => rport,
+          'Proto'     => 'tcp',
+          'Server'    => true
+        )
+      )
+
+      # Start the local TCP reverse relay in association with this stream
+      service.start_reverse_tcp_relay(
+        channel,
+        'LocalPort'         => rport,
+        'PeerHost'          => lhost,
+        'PeerPort'          => lport,
+        'MeterpreterRelay'  => true
+      )
+    rescue Exception => e
+      print_error("Failed to create relay: #{e.to_s}")
+      return false
+    end
+
+  end
+
   #
   # Starts and stops local port forwards to remote hosts on the target
   # network.  This provides an elementary pivoting interface.
@@ -448,132 +502,95 @@ class Console::CommandDispatcher::Stdapi::Net
 
     # Process the command
     case args.shift
-      when 'list'
-        portfwd_list
-      when 'add'
+    when 'list'
+      portfwd_list
+    when 'add'
 
-        if reverse
-          # Validate parameters
-          unless lport && lhost && rport
-            print_error('You must supply a local port, local host, and remote port.')
-            return
-          end
+      if reverse
+        portfwd_add_reverse(lhost, lport, rhost, rport)
+      else
+        portfwd_add(lhost, lport, rhost, rport)
+      end
 
-          begin
-            channel = client.net.socket.create(
-              Rex::Socket::Parameters.new(
-                'LocalPort' => rport,
-                'Proto'     => 'tcp',
-                'Server'    => true
-              )
-            )
-
-            # Start the local TCP reverse relay in association with this stream
-            service.start_reverse_tcp_relay(channel,
-              'LocalPort'         => rport,
-              'PeerHost'          => lhost,
-              'PeerPort'          => lport,
-              'MeterpreterRelay'  => true)
-          rescue Exception => e
-            print_error("Failed to create relay: #{e.to_s}")
-            return false
-          end
-
-        else
-          # Validate parameters
-          unless lport && rhost && rport
-            print_error('You must supply a local port, remote host, and remote port.')
-            return
-          end
-
-          # Start the local TCP relay in association with this stream
-          service.start_tcp_relay(lport,
-            'LocalHost'         => lhost,
-            'PeerHost'          => rhost,
-            'PeerPort'          => rport,
-            'MeterpreterRelay'  => true,
-            'OnLocalConnection' => Proc.new { |relay, lfd| create_tcp_channel(relay) })
-        end
-
-        print_status("Local TCP relay created: #{lhost}:#{lport} <-> #{rhost}:#{rport}")
+      print_status("Local TCP relay created: #{lhost}:#{lport} <-> #{rhost}:#{rport}")
 
       # Delete local port forwards
-      when 'delete', 'remove', 'del', 'rm'
+    when 'delete', 'remove', 'del', 'rm'
 
-        found = false
-        unless index.nil?
-          counter = 1
-          service.each_tcp_relay do |lh, lp, rh, rp, opts|
-            if counter == index
-              lhost, lport, rhost, rport = lh, lp, rh, rp
-              reverse = opts['Reverse'] == true
-              found = true
-              break
-            end
-
-            counter += 1
-          end
-
-          unless found
-            print_error("Invalid index: #{index}")
-          end
-        end
-
-        if reverse
-          # No remote port, no love.
-          unless rport
-            print_error('You must supply a remote port.')
-            return
-          end
-
-          if service.stop_reverse_tcp_relay(lport)
-            print_status("Successfully stopped reverse TCP relay on :#{lport}")
-          else
-            print_error("Failed to stop reverse TCP relay on #{lport}")
-          end
-        else
-          # No local port, no love.
-          unless lport
-            print_error('You must supply a local port.')
-            return
-          end
-
-          # Stop the service
-          if service.stop_tcp_relay(lport, lhost)
-            print_status("Successfully stopped TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
-          else
-            print_error("Failed to stop TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
-          end
-        end
-
-      when 'flush'
-
-        counter = 0
-        service.each_tcp_relay do |lhost, lport, rhost, rport, opts|
-          next if (opts['MeterpreterRelay'] == nil)
-
-          if opts['Reverse'] == true
-            if service.stop_reverse_tcp_relay(lport)
-              print_status("Successfully stopped reverse TCP relay on :#{lport}")
-            else
-              print_error("Failed to stop reverse TCP relay on #{lport}")
-              next
-            end
-          else
-            if service.stop_tcp_relay(lport, lhost)
-              print_status("Successfully stopped TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
-            else
-              print_error("Failed to stop TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
-              next
-            end
+      found = false
+      unless index.nil?
+        counter = 1
+        service.each_tcp_relay do |lh, lp, rh, rp, opts|
+          if counter == index
+            lhost, lport, rhost, rport = lh, lp, rh, rp
+            reverse = opts['Reverse'] == true
+            found = true
+            break
           end
 
           counter += 1
         end
-        print_status("Successfully flushed #{counter} rules")
 
+        unless found
+          print_error("Invalid index: #{index}")
+        end
+      end
+
+      if reverse
+        # No remote port, no love.
+        unless rport
+          print_error('You must supply a remote port.')
+          return
+        end
+
+        if service.stop_reverse_tcp_relay(lport)
+          print_status("Successfully stopped reverse TCP relay on :#{lport}")
+        else
+          print_error("Failed to stop reverse TCP relay on #{lport}")
+        end
       else
-        cmd_portfwd_help
+        # No local port, no love.
+        unless lport
+          print_error('You must supply a local port.')
+          return
+        end
+
+        # Stop the service
+        if service.stop_tcp_relay(lport, lhost)
+          print_status("Successfully stopped TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
+        else
+          print_error("Failed to stop TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
+        end
+      end
+
+    when 'flush'
+
+      counter = 0
+      service.each_tcp_relay do |lhost, lport, rhost, rport, opts|
+        next if (opts['MeterpreterRelay'] == nil)
+
+        if opts['Reverse'] == true
+          if service.stop_reverse_tcp_relay(lport)
+            print_status("Successfully stopped reverse TCP relay on :#{lport}")
+          else
+            print_error("Failed to stop reverse TCP relay on #{lport}")
+            next
+          end
+        else
+          if service.stop_tcp_relay(lport, lhost)
+            print_status("Successfully stopped TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
+          else
+            print_error("Failed to stop TCP relay on #{lhost || '0.0.0.0'}:#{lport}")
+            next
+          end
+        end
+
+        counter += 1
+      end
+      print_status("Successfully flushed #{counter} rules")
+
+    else
+      cmd_portfwd_help
     end
   end
 
@@ -640,7 +657,7 @@ class Console::CommandDispatcher::Stdapi::Net
     print_line(table.to_s)
   end
 
-protected
+  protected
 
   #
   # Creates a TCP channel using the supplied relay context.
