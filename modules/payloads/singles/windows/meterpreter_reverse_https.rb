@@ -6,6 +6,7 @@
 require 'msf/core/payload/transport_config'
 require 'msf/core/handler/reverse_https'
 require 'msf/core/payload/windows/meterpreter_loader'
+require 'msf/core/payload/windows/reverse_https'
 require 'msf/base/sessions/meterpreter_x86_win'
 require 'msf/base/sessions/meterpreter_options'
 require 'rex/payloads/meterpreter/config'
@@ -19,6 +20,7 @@ module MetasploitModule
   include Msf::Payload::Single
   include Msf::Payload::Windows::MeterpreterLoader
   include Msf::Sessions::MeterpreterOptions
+  include Msf::Payload::Windows::ReverseHttps
 
   def initialize(info = {})
 
